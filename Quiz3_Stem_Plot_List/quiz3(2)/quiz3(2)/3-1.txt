@@ -1,0 +1,80 @@
+static  void ComputeStemPlotList(StemPlotList *stemPlotList, DataSet * dataSet)
+{
+	EType *bgn = NULL, *end = NULL;
+	EType *tempDataStore;
+	StemNode *tempNode = NULL;
+	int stemValue = 0, elemSize = 0;
+	int i, j;
+
+	tempDataStore = (EType *)calloc(dataSet->length, sizeof(EType) * dataSet->length);
+
+	SortQuick(dataSet->elem, 0, dataSet->length - 1);// 데이터 정렬
+	printf("\n");
+
+	bgn = dataSet->elem;
+	end = dataSet->elem + dataSet->length; 
+
+	while (1)
+	{
+		if (stemValue != *bgn / 10 && elemSize != 0) { //새로운 줄기(stem)이 생겼을 경우 
+			tempNode = CreateStemNode(elemSize, stemValue);//현재 까지의 leaf 개수를 사용하여 stemnode를 만든다.
+			for (i = 0; i < elemSize; i++)
+			{
+				tempNode->leaf[i] = tempDataStore[i]; //leaf들을 넣어준다. 
+				tempDataStore[i] = 0; // 다시 leaf를 세리기 위해 초기화
+			}
+			AddStemNode(stemPlotList, tempNode); // StemPlotList에 넣어준다.
+
+			stemValue = *bgn / 10; // 새로운 stem 값 설정
+			elemSize = 0; // leaf 개수 초기화
+			tempDataStore[elemSize++] = *bgn % 10; // 현재의 leaf값을 넣는다.
+			
+			if (bgn == end)//data 끝까지 갔을 경우 종료 
+				break;
+		}
+		else {//stem이 같으므로 leaf를 추가해 준다.
+			tempDataStore[elemSize++] = *bgn % 10; // leaf추가
+			stemValue = *bgn / 10;// 줄기값 설정
+		}
+		bgn++; //data가 다음 값으로 가도록 bgn 증가.
+	}
+}
+
+static void AddStemNode(StemPlotList *stemPlotList, StemNode *stemNode)
+{
+	StemNode *lastStemNode = NULL;
+
+	if (stemPlotList->head == NULL) { // 만약 시작이 없으면 시작에 넣어준다.
+		stemPlotList->head = stemNode;
+		stemPlotList->tail = stemNode;
+	}
+	else if (stemPlotList->head == stemPlotList->tail) {//시작과 끝이 같다면 1개 밖에 없다는 것
+		stemPlotList->head->next = stemNode; // 시작 다음에 넣어준다.
+		stemPlotList->tail = stemNode; // 끝을 현재 stemnode로 설정한다.
+	}
+	else {//여러개가 들어 있으므로 마지막에 연결시켜 넣어 줘야 한다.
+		lastStemNode = stemPlotList->head; // head로 설정
+		while (lastStemNode->next != NULL)// 마지막 stemNode 까지 간다.
+		{
+			lastStemNode = lastStemNode->next; // 다음 stemnode로 설정
+		}
+		lastStemNode->next = stemNode; // 마지막 stemNode에 추가
+		stemPlotList->tail = stemNode; // 끝을 stemnode로 설정
+	}
+}
+
+static void PrintLeaf(StemNode *stemNode)
+{
+	EType *bgn = NULL, *end = NULL;
+	bgn = stemNode->leaf; //bgn을 leaf의 시작 주소로 설정
+	end = stemNode->leaf + stemNode->freq; // end를 leaf의 끝 주소로 설정 
+	printf("\t%d ( %2d) : ", stemNode->stem, stemNode->freq); // 줄기와 잎의 개수 출력
+	
+	while (bgn != end) //시작 주소와 끝 주소가 같아질 때까지
+	{
+		printf(PRNFORMAT, *bgn++); //leaf 출력
+		if (bgn == end) // 시작 주소와 끝 주소가 같아지면 종료
+			break;
+	}
+	printf("\n");
+}
